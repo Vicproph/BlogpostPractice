@@ -110,7 +110,12 @@ class PostController extends Controller
 
         $user = Auth::user();
         if ($user->can('like',Post::class)) {
-            $post = Post::findOrFail($id); // اگر پستی با این آیدی وجود نداشت خطا برگرداند
+            $post = Post::find($id);
+            if ($post==null){
+                return response([
+                    'message' => 'چنین پستی وجود ندارد'
+                ]);
+            }
             if ($user->hasLiked($post))
                 return response([
                     'message' => 'این پست قبلا لایک شده'
@@ -126,7 +131,12 @@ class PostController extends Controller
 
     public function comment(CommentRequest $request,$id)
     {
-        $post = Post::findorFail($id);
+        $post = Post::find($id);
+        if ($post==null){
+            return response([
+                'message' => 'چنین پستی وجود ندارد'
+            ]);
+        }
         $validated = $request->validated();
         $comment = $post->comments()->create(['body'=>$validated['body'],'user_id'=>Auth::user()->id]);
         return $comment;
@@ -137,7 +147,7 @@ class PostController extends Controller
         $comment = $this->comment($request,$id);
         $like = $this->like($id);
         return response([
-           'comment'=>new CommentResource($comment),
+           'comment'=>($comment instanceof Comment? new CommentResource($comment) : $comment),
            'like'=>($like instanceof Like? new LikeResource($like) : $like)
         ]);
     }

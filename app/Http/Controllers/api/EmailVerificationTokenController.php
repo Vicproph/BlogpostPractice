@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Events\app\Events\RequestedAccountVerificationToken;
+use App\Events\Registered;
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 

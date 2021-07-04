@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\api;
 
 use App\Events\LoggedIn;
+use App\Events\Registered;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Image;
 use App\Models\Skill;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
