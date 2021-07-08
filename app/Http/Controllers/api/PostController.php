@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Events\PostUnapproved;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CommentRequest;
 use App\Http\Requests\PostCreateRequest;
+use App\Http\Requests\PostDisapprovalRequest;
 use App\Http\Resources\CommentCollection;
 use App\Http\Resources\CommentResource;
 use App\Http\Resources\ImageResource;
@@ -28,12 +30,30 @@ class PostController extends Controller
     //
     public function index()
     {
-        return response(new PostCollection(Post::all()));
+        $posts = Post::approved()->get();
+        return response(new PostCollection($posts));
     }
-
+    public function indexUnapproved()
+    {
+        $user = Auth::user();
+        if ($user->can('approvePost', Post::class)) {
+            $posts = Post::unapproved()->get();
+            return response(new PostCollection($posts));
+        } else {
+            return response([
+                'message' => __('messages.not_authorized')
+            ]);
+        }
+    }
     public function show($id)
     {
-        return new PostResource(Post::findOrFail($id));
+        $post = Post::approved()->findOrFail($id);
+        return new PostResource($post);
+    }
+    public function showFromUser($userId) // shows posts of a specific user
+    {
+        $user = User::findOrFail($userId);
+        return new PostCollection($user->posts);
     }
 
     public function search($query)
@@ -43,43 +63,43 @@ class PostController extends Controller
         return new PostCollection($matches);
     }
 
-    public function searchAndOrderBy($query,$orderBy)
+    public function searchAndOrderBy($query, $orderBy)
     {
         //پارامتر دوم می تواند مقدار های زیر را داشته باشد
         // orderBy == likes-asc || likes-desc || created_at-desc || created_at-asc ||comments-desc || comments-asc
         $orderingFactor = null;
         $direction = null;
-        switch ($orderBy){
+        switch ($orderBy) {
             case 'likes-asc':
-                $orderingFactor='likes';
+                $orderingFactor = 'likes';
                 $direction = 'asc';
                 break;
             case 'likes-desc':
-                $orderingFactor='likes';
+                $orderingFactor = 'likes';
                 $direction = 'desc';
                 break;
             case 'comments-asc':
-                $orderingFactor='comments';
+                $orderingFactor = 'comments';
                 $direction = 'asc';
                 break;
             case 'comments-desc':
-                $orderingFactor='comments';
+                $orderingFactor = 'comments';
                 $direction = 'desc';
                 break;
             case 'created_at-asc':
-                $orderingFactor='created_at';
-                $direction='asc';
+                $orderingFactor = 'created_at';
+                $direction = 'asc';
                 break;
             default:
-                $orderingFactor='created_at';
-                $direction='desc';
+                $orderingFactor = 'created_at';
+                $direction = 'desc';
         }
         /**
          * @var $matches Collection
          */
         // قطعه کد زیر تصمیم می گیرد که چطور پست ها را بر اساس چه فاکتوری مرتب کند
         $matches = Post::search($query);
-        $sortedMatches = $this->decideHowToSort($matches,$orderingFactor,$direction);
+        $sortedMatches = $this->decideHowToSort($matches, $orderingFactor, $direction);
 
         return new PostCollection($sortedMatches);
     }
@@ -89,13 +109,12 @@ class PostController extends Controller
         /**
          * @var $user User
          */
-        $user =Auth::user();
+        $user = Auth::user();
         $validated = $request->validated();
-        if ($user->can('create',Post::class)) {
-            $post = $user->posts()->create(['title'=>$validated['title'],'body'=>$validated['body']]);
+        if ($user->can('create', Post::class)) {
+            $post = $user->posts()->create(['title' => $validated['title'], 'body' => $validated['body']]);
             return $post;
-        }
-        else {
+        } else {
             return response([
                 'message' => 'شما جهت ارسال پست باید شماره موبایل خود را تنظیم کنید'
             ]);
@@ -109,9 +128,9 @@ class PostController extends Controller
          */
 
         $user = Auth::user();
-        if ($user->can('like',Post::class)) {
+        if ($user->can('like', Post::class)) {
             $post = Post::find($id);
-            if ($post==null){
+            if ($post == null) {
                 return response([
                     'message' => 'چنین پستی وجود ندارد'
                 ]);
@@ -122,41 +141,74 @@ class PostController extends Controller
                 ]);
             $like = $user->likes()->create(['post_id' => $id]);
             return $like;
-        }else{
+        } else {
             return response([
-                'message'=>'شما برای لایک کردن باید شماره تلفن را تنظیم کرده باشید'
+                'message' => 'شما برای لایک کردن باید شماره تلفن را تنظیم کرده باشید'
             ]);
         }
     }
 
-    public function comment(CommentRequest $request,$id)
+    public function comment(CommentRequest $request, $id)
     {
         $post = Post::find($id);
-        if ($post==null){
+        if ($post == null) {
             return response([
                 'message' => 'چنین پستی وجود ندارد'
             ]);
         }
         $validated = $request->validated();
-        $comment = $post->comments()->create(['body'=>$validated['body'],'user_id'=>Auth::user()->id]);
+        $comment = $post->comments()->create(['body' => $validated['body'], 'user_id' => Auth::user()->id]);
         return $comment;
     }
 
-    public function commentAndLike(CommentRequest $request,$id)
+    public function commentAndLike(CommentRequest $request, $id)
     {
-        $comment = $this->comment($request,$id);
+        $comment = $this->comment($request, $id);
         $like = $this->like($id);
         return response([
-           'comment'=>($comment instanceof Comment? new CommentResource($comment) : $comment),
-           'like'=>($like instanceof Like? new LikeResource($like) : $like)
+            'comment' => ($comment instanceof Comment ? new CommentResource($comment) : $comment),
+            'like' => ($like instanceof Like ? new LikeResource($like) : $like)
         ]);
     }
-    private function decideHowToSort($posts,$orderingFactor,$direction){
 
-        return (($orderingFactor=='likes') ?
-            $posts->sortByLikes($direction)->get():
-            (($orderingFactor=='created_at') ?
-                $posts->sortByDate($direction)->get():
+    public function approvePost($id)
+    {
+        $post = Post::unapproved()->where('id', $id)->first();
+        if ($post != null) {
+            $post->is_approved = true;
+            $post->save();
+            return response(new PostResource($post));
+        } else {
+            return response([
+                'error' => [
+                    'message' => __('messages.post_not_found')
+                ]
+            ]);
+        }
+    }
+    public function unapprovePost(PostDisapprovalRequest $request, $id)
+    {
+        $validated = $request->validated();
+        $post = $post = Post::unapproved()->where('id', $id)->first();
+        if ($post != null) {
+            $post->disapproval_body = $validated['body'];
+            $post->save();
+            event(new PostUnapproved($post));
+            return $post;
+        } else {
+            return response([
+                'error' => [
+                    'message' => __('messages.post_not_found')
+                ]
+            ]);
+        }
+    }
+    private function decideHowToSort($posts, $orderingFactor, $direction)
+    {
+
+        return (($orderingFactor == 'likes') ?
+            $posts->sortByLikes($direction)->get() : (($orderingFactor == 'created_at') ?
+                $posts->sortByDate($direction)->get() :
                 $posts->sortByComments($direction)->get()));
     }
 }

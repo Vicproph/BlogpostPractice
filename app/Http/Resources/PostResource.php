@@ -15,17 +15,19 @@ class PostResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id'=>$this->id,
-            'title'=> $this->title,
-            'body'=>$this->body,
-            'created_at'=>$this->created_at,
-            'author'=>[
-                'profile'=> new UserResource($this->user),
-                'avatar'=>new ImageResource($this->user->avatar) ,
-            ]
-            ,
-            'likes'=>new LikeCollection($this->likes),
-            'comments'=>new CommentCollection($this->comments)
+            'id' => $this->id,
+            'title' => $this->title,
+            'body' => $this->body,
+            'created_at' => $this->created_at,
+            'is_approved' => $this->is_approved,
+            'author' => [
+                'profile' => new UserResource($this->user),
+                'avatar' => new ImageResource($this->user->avatar),
+            ],
+            'likes_count' => $this->likes()->count(),
+            'likes' => new LikeCollection($this->likes),
+            'comments_count' => $this->comments()->count(),
+            'comments' => new CommentCollection($this->comments)
         ];
     }
 }

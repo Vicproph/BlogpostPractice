@@ -8,10 +8,16 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+// use Spatie\Permission\Traits\HasRoles;
+// use Spatie\Permission\Models\Role;
+// use Spatie\Permission\Models\Permission;
+
 class User extends Authenticatable implements MustVerifyEmail
 
 {
-    use HasApiTokens,HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
+
+    
 
     /**
      * The attributes that are mass assignable.
@@ -31,7 +37,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'remember_token',
     ];
-
+    
     /**
      * The attributes that should be cast to native types.
      *
@@ -48,7 +54,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function avatar()
     {
-        return $this->morphOne(Image::class,'imageable');
+        return $this->morphOne(Image::class, 'imageable');
     }
 
     public function likes()
@@ -70,9 +76,19 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsToMany(Skill::class);
     }
+
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class);
+    }
+
     //Utility functions
     public function hasLiked(Post $post): bool
     {
-        return !$post->likes->where('user_id',$this->id)->isEmpty();
+        return !$post->likes->where('user_id', $this->id)->isEmpty();
+    }
+    public function isRole($roleTitle){ // checks if the user has the specified role
+        $hasRole = !($this->roles->where('title',$roleTitle)->isEmpty());
+        return $hasRole;
     }
 }

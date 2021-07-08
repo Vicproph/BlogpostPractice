@@ -4,6 +4,9 @@ namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateUserInfoRequest;
+use App\Http\Resources\PostCollection;
+use App\Http\Resources\UserCollection;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +16,19 @@ use Illuminate\Support\Facades\Storage;
 class UserController extends Controller
 {
     //
+    public function index()
+    {
+        $user = Auth::user();
+
+        if ($user->can('viewAny', User::class)) {
+            $users = User::all();
+            return response([
+                new UserCollection($users)
+            ]);
+        } else {
+            return response('messages.not_authorized');
+        }
+    }
     public function getUnreadNotifications()
     {
         /**
@@ -25,23 +41,21 @@ class UserController extends Controller
     {
         $validated = $request->validated();
         $skillsOk = AuthController::hasEnoughSkills($validated['skills']);
-        if ($skillsOk){
-            if(self::hasEnteredAtLeastOneField($validated)){
-                if ($this->hasNotEnteredIllegalFields($validated)){
+        if ($skillsOk) {
+            if (self::hasEnteredAtLeastOneField($validated)) {
+                if ($this->hasNotEnteredIllegalFields($validated)) {
                     $user = $this->updateUserFromInputs($validated);
                     $user->save();
                     return response([
-                        'message'=>'اطلاعات شما با موفقیت به روزرسانی شد'
+                        'message' => 'اطلاعات شما با موفقیت به روزرسانی شد'
                     ]);
-                }
-                else{
+                } else {
                     return response([
-                        'message'=> 'شما نمی توانید ایمیل یا شماره تلفن خود را تغییر دهید'
+                        'message' => 'شما نمی توانید ایمیل یا شماره تلفن خود را تغییر دهید'
                     ]);
                 }
             }
-        }
-        else{
+        } else {
             return response([
                 'message' => 'تعداد مهارت ها باید بین 3 تا 10 باشد'
             ]);
@@ -57,7 +71,7 @@ class UserController extends Controller
     private function hasNotEnteredIllegalFields($inputs): bool
     {
         // این تابع چک می کند که آیا ایمیل و شماره تلفن وارد شده اند یا خیر (که نباید وارد شوند)
-        return (isset($inputs['email'])? false : true) && (isset($inputs['phone_number'])?false:true);
+        return (isset($inputs['email']) ? false : true) && (isset($inputs['phone_number']) ? false : true);
     }
 
     private function updateUserFromInputs($inputs): User
@@ -66,41 +80,41 @@ class UserController extends Controller
          * @var $user User
          */
         $user = User::find($inputs['id']);
-        $username = $inputs['username']??null;
-        $password = $inputs['password']??null;
-        $avatar = $inputs['avatar']??null;
-        $description = $inputs['description']??null;
-        $firstname = $inputs['firstname']??null;
-        $lastname = $inputs['lastname']??null;
-        $skills = $inputs['skills']??null;
+        $username = $inputs['username'] ?? null;
+        $password = $inputs['password'] ?? null;
+        $avatar = $inputs['avatar'] ?? null;
+        $description = $inputs['description'] ?? null;
+        $firstname = $inputs['firstname'] ?? null;
+        $lastname = $inputs['lastname'] ?? null;
+        $skills = $inputs['skills'] ?? null;
         // در دسته شرط های زیر اگه فیلد ها خالی نبودند باید آپدیت شوند
-        if ($username!=null){
+        if ($username != null) {
             $user->username = $username;
         }
-        if ($password!=null){
+        if ($password != null) {
             $user->password = Hash::make($password);
         }
-        if ($avatar!=null){
-            self::updateAvatarImage($user,$avatar);
+        if ($avatar != null) {
+            self::updateAvatarImage($user, $avatar);
         }
-        if ($description!=null){
+        if ($description != null) {
             $user->description = $description;
         }
-        if ($firstname!=null){
+        if ($firstname != null) {
             $user->firstname = $firstname;
         }
-        if($lastname!=null){
+        if ($lastname != null) {
             $user->lastname = $lastname;
         }
-        if ($skills!=null){
-            AuthController::setSkills($user,$skills);
+        if ($skills != null) {
+            AuthController::setSkills($user, $skills);
         }
         return $user;
-
     }
-    public static function updateAvatarImage(User $user,$file){
+    public static function updateAvatarImage(User $user, $file)
+    {
         Storage::delete($user->avatar->path);
         $user->avatar()->delete();
-        AuthController::saveAvatar($user,$file);
+        AuthController::saveAvatar($user, $file);
     }
 }

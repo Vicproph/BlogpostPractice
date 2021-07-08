@@ -17,12 +17,16 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         Registered::class => [
             SendEmailVerificationNotification::class,
+            'App\Listeners\AssignRoles'
         ],
         'App\Events\Registered'=>[
             "App\Listeners\SendEmailVerificationNotification"
         ],
         'App\Events\LoggedIn'=>[
             "App\Listeners\SendRemainingLoginTimeNotification"
+        ],
+        'App\Events\PostUnapproved'=>[
+            "App\Listeners\SendPostRejectionNotification"
         ]
     ];
 

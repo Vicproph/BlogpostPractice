@@ -11,7 +11,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-class SendEmailVerificationNotification
+class SendEmailVerificationNotification implements ShouldQueue
 {
     /**
      * Handle the event.

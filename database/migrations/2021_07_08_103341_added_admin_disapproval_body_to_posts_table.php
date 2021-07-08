@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddedTokenField extends Migration
+class AddedAdminDisapprovalBodyToPostsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +13,9 @@ class AddedTokenField extends Migration
      */
     public function up()
     {
-        Schema::table('email_verification_tokens', function (Blueprint $table) {
+        Schema::table('posts', function (Blueprint $table) {
             //
-            $table->string('token',70);
+            $table->text('disapproval_body')->nullable()->default(null);
         });
     }
 
@@ -26,7 +26,7 @@ class AddedTokenField extends Migration
      */
     public function down()
     {
-        Schema::table('=email_verification_tokens', function (Blueprint $table) {
+        Schema::table('posts', function (Blueprint $table) {
             //
         });
     }

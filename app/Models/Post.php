@@ -31,6 +31,12 @@ class Post extends Model
     {
         return $query->orderBy('created_at',$direction);
     }
+    public function scopeApproved($query){ // posts approved by an admin
+        $query->where('is_approved',1);
+    }
+    public function scopeUnapproved($query){ // posts not approved by an admin
+        $query->where('is_approved',0);
+    }
     public function user()
     {
         return  $this->belongsTo(User::class);

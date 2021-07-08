@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Image;
+use App\Models\Role;
 use App\Models\Skill;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     //
+
+    // some ordinary responses
 
     public function login(Request $request)
     { // اول می فهمیم کاربر با کدام فیلد وارد شده است
@@ -57,6 +60,31 @@ class AuthController extends Controller
         }
     }
 
+    public function loginInsteadOf($id) // Only admins can do this
+    {
+        if (Auth::user()->can('loginInsteadOf', User::class)) {
+            $user = User::findOrFail($id);
+            if ($user->isRole(Role::ROLE_USER_TITLE)) {
+                $token = $user->createToken('admin_access_token')->plainTextToken;
+                return response([
+                    'admin_access_token' => $token
+                ]);
+            } else {
+                return response([
+                    'errors' => [
+                        'message' => 'شما تنها می توانید به عنوان کاربر وارد شوید'
+                    ]
+                ]);
+            }
+        } else {
+            return response([
+                'errors' => [
+                    'message' => __('messages.not_authorized')
+                ]
+            ]);
+        };
+    }
+
     public function logout()
     {
         /**
@@ -67,7 +95,6 @@ class AuthController extends Controller
         return response([
             'message' => 'شما با موفقیت از سیستم خارج شدید'
         ]);
-
     }
 
     public function register(UserRegisterRequest $request)

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddedTokenField extends Migration
+class CreateRoleUserTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +13,11 @@ class AddedTokenField extends Migration
      */
     public function up()
     {
-        Schema::table('email_verification_tokens', function (Blueprint $table) {
-            //
-            $table->string('token',70);
+        Schema::create('role_user', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('role_id');
+            $table->timestamps();
         });
     }
 
@@ -26,8 +28,6 @@ class AddedTokenField extends Migration
      */
     public function down()
     {
-        Schema::table('=email_verification_tokens', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('role_user');
     }
 }
