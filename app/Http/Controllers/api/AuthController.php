@@ -8,16 +8,23 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Image;
+use App\Models\LoginAttempt;
 use App\Models\Role;
 use App\Models\Skill;
 use App\Models\User;
+use GuzzleHttp\Client;
+use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Psr\Http\Message\ResponseInterface;
 
 class AuthController extends Controller
 {
-    //
+    // Google ReCaptcha stuff
+    const SITE_KEY = '6Lc2-ocbAAAAAAqvPhGD3eCya-EX9Bn9Wrdp4FyW';
+    const SECRET_KEY = '6Lc2-ocbAAAAAJzYxUdqn_KaOKL0dB5TzA0Wf6yw';
+    const VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
 
     // some ordinary responses
 
@@ -26,37 +33,59 @@ class AuthController extends Controller
         /**
          * @var $user User
          */
-        $email = $request->input('email');
-        $phoneNumber = $request->input('phone_number');
-        $username = $request->input('username');
-        $password = $request->input('password');
-        if ($this->enteredAtLeastOneId($email, $phoneNumber, $username)) {
-            $user = $this->fetchUser($email, $phoneNumber, $username);
-            if (!$user) {
-                return response([
-                    'message' => 'کاربر وجود ندارد'
-                ]);
-            }
+        if (!LoginAttempt::reachedMaximumAllowedLoginAttempt($request->ip())) { // if the user has less than 3 unsuccessful login attempts
+            $email = $request->input('email');
+            $phoneNumber = $request->input('phone_number');
+            $username = $request->input('username');
+            $password = $request->input('password');
+            if ($this->enteredAtLeastOneId($email, $phoneNumber, $username)) {
+                $user = $this->fetchUser($email, $phoneNumber, $username);
+                if (!$user) {
+                    LoginAttempt::incrementLoginAttempts($request->ip());
+                    return response([
+                        'message' => 'کاربر وجود ندارد'
+                    ]);
+                }
 
-            if (Hash::check($password, $user->password)) {
-                if ($user->tokens != null) // اگر توکن قبلی ای وجود داشت آن را پاک می کند
-                    $user->tokens()->delete();
-                $token = $user->createToken('access_token')->plainTextToken;
-                event(new LoggedIn($user));
-                return response([
-                    'user' => new UserResource($user),
-                    'access_token' => $token,
-                    'message' => 'مدت زمان وارد بودن در سیستم 10 دقیقه است، پس از آن نیاز به وارد شدن دوباره دارید'
-                ]);
+                if (Hash::check($password, $user->password)) {
+                    if ($user->tokens != null) // اگر توکن قبلی ای وجود داشت آن را پاک می کند
+                        $user->tokens()->delete();
+                    $token = $user->createToken('access_token')->plainTextToken;
+                    event(new LoggedIn($user,$request->ip()));
+                    return response([
+                        'user' => new UserResource($user),
+                        'access_token' => $token,
+                        'message' => 'مدت زمان وارد بودن در سیستم 10 دقیقه است، پس از آن نیاز به وارد شدن دوباره دارید'
+                    ]);
+                } else {
+                    LoginAttempt::incrementLoginAttempts($request->ip());
+                    return response([
+                        'message' => 'اطلاعات ورود نامعتبر است'
+                    ]);
+                }
             } else {
+                LoginAttempt::incrementLoginAttempts($request->ip());
                 return response([
-                    'message' => 'اطلاعات ورود نامعتبر است'
+                    'message' => 'هیچ شناسه ای برای ورود، وارد نکرده اید'
                 ]);
             }
-        } else {
-            return response([
-                'message' => 'هیچ شناسه ای برای ورود، وارد نکرده اید'
-            ]);
+        } else { // login attempts exceeded...
+            $response = $this->verifyCaptcha($request);
+            $responseString = $response->getBody()->getContents();
+            $responseObject = json_decode($responseString);
+            if ($responseObject->success === false) {
+                return response($responseString, 200, [
+                    'Content-Type' => 'application/json'
+                ]);
+            } else { // Passed the recaptcha verification and should be allowed to log in
+                LoginAttempt::deleteLoginAttempts($request->ip());
+                return response([
+                    'captcha' =>$responseString,
+                    'message'=>'کپچا با موفقیت گذرانده شد، می توانید دوباره برای وارد شدن تلاش کنید'
+                ],200, [
+                    'Content-Type' => 'application/json'
+                ]);
+            }
         }
     }
 
@@ -194,5 +223,23 @@ class AuthController extends Controller
     private function enteredAtLeastOneId($email, $phoneNumber, $username)
     {
         return ($email != null) || ($phoneNumber != null) || ($username != null);
+    }
+
+    private function verifyCaptcha(Request $request): ResponseInterface
+    {
+        $client = new Client();
+        $captchaResponse = $request->input('captcha_response');
+
+        $response = $client->post(self::VERIFY_URL, [
+            'headers' => [
+                'Accept' => 'application/json'
+            ],
+            'form_params' => [
+                'secret' => self::SECRET_KEY,
+                'response' => $captchaResponse,
+                'remoteip' => $request->ip()
+            ]
+        ]);
+        return $response;
     }
 }

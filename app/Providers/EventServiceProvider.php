@@ -19,15 +19,21 @@ class EventServiceProvider extends ServiceProvider
             SendEmailVerificationNotification::class,
             'App\Listeners\AssignRoles'
         ],
-        'App\Events\Registered'=>[
+        'App\Events\Registered' => [
             "App\Listeners\SendEmailVerificationNotification"
         ],
-        'App\Events\LoggedIn'=>[
-            "App\Listeners\SendRemainingLoginTimeNotification"
+        'App\Events\LoggedIn' => [
+            "App\Listeners\SendRemainingLoginTimeNotification",
+            "App\Listeners\RemoveLoginAttempts",
+
         ],
-        'App\Events\PostUnapproved'=>[
+        'App\Events\PostUnapproved' => [
             "App\Listeners\SendPostRejectionNotification"
+        ],
+        'App\Events\AttemptedTooManyLogins' => [
+            "App\Listeners\SetCaptchaAuthentication"
         ]
+
     ];
 
     /**

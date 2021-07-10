@@ -10,7 +10,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class LoggedIn
+class AttemptedTooManyLogins
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -19,12 +19,10 @@ class LoggedIn
      *
      * @return void
      */
-    public $user;
     public $ip;
-    public function __construct($user , $ip = null)
+    public function __construct($ip)
     {
         //
-        $this->user =$user;
         $this->ip = $ip;
     }
 
