@@ -47,3 +47,8 @@ Route::prefix('/posts')->group(function () {
     Route::middleware('auth:sanctum')->get('/search/{query}', 'api\PostController@search');
     Route::middleware('auth:sanctum')->get('/search/{query}/{orderBy}', 'api\PostController@searchAndOrderBy');
 });
+
+Route::prefix('/status')->group(function (){ // Services Health checking
+    Route::post('/database','api\ServiceStatusController@checkDatabaseHealth');
+    Route::middleware('auth:sanctum')->post('/mail','api\ServiceStatusController@checkMailHealth');
+});

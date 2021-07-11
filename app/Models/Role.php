@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Role extends Model
 {
+    const ROLE_ADMIN_ID = 1;
+    const ROLE_USER_ID = 2;
     const ROLE_ADMIN_TITLE = 'Admin';
     const ROLE_USER_TITLE = 'User';
 

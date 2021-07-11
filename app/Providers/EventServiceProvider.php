@@ -30,9 +30,7 @@ class EventServiceProvider extends ServiceProvider
         'App\Events\PostUnapproved' => [
             "App\Listeners\SendPostRejectionNotification"
         ],
-        'App\Events\AttemptedTooManyLogins' => [
-            "App\Listeners\SetCaptchaAuthentication"
-        ]
+
 
     ];
 
