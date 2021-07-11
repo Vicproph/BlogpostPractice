@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Events\LoggedIn;
+use App\Events\MadeActivity;
 use App\Events\Registered;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRegisterRequest;
@@ -12,6 +13,7 @@ use App\Models\LoginAttempt;
 use App\Models\Role;
 use App\Models\Skill;
 use App\Models\User;
+use DateTime;
 use GuzzleHttp\Client;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Http\Request;
@@ -51,7 +53,9 @@ class AuthController extends Controller
                     if ($user->tokens != null) // اگر توکن قبلی ای وجود داشت آن را پاک می کند
                         $user->tokens()->delete();
                     $token = $user->createToken('access_token')->plainTextToken;
-                    event(new LoggedIn($user,$request->ip()));
+                    event(new LoggedIn($user, $request->ip()));
+                    $user->last_login_at = date('Y-m-d h:i:s');
+                    $user->save();
                     return response([
                         'user' => new UserResource($user),
                         'access_token' => $token,
@@ -80,9 +84,9 @@ class AuthController extends Controller
             } else { // Passed the recaptcha verification and should be allowed to log in
                 LoginAttempt::deleteLoginAttempts($request->ip());
                 return response([
-                    'captcha' =>$responseString,
-                    'message'=>'کپچا با موفقیت گذرانده شد، می توانید دوباره برای وارد شدن تلاش کنید'
-                ],200, [
+                    'captcha' => $responseString,
+                    'message' => 'کپچا با موفقیت گذرانده شد، می توانید دوباره برای وارد شدن تلاش کنید'
+                ], 200, [
                     'Content-Type' => 'application/json'
                 ]);
             }
@@ -120,6 +124,7 @@ class AuthController extends Controller
          * @var $user User
          */
         $user = Auth::user();
+        event(new MadeActivity($user));
         $user->tokens()->delete();
         return response([
             'message' => 'شما با موفقیت از سیستم خارج شدید'

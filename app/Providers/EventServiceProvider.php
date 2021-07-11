@@ -30,6 +30,9 @@ class EventServiceProvider extends ServiceProvider
         'App\Events\PostUnapproved' => [
             "App\Listeners\SendPostRejectionNotification"
         ],
+        'App\Events\MadeActivity' => [
+            "App\Listeners\ReportActivity"
+        ],
 
 
     ];
