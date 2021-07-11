@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Events\MadeActivity;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateUserInfoRequest;
 use App\Http\Resources\PostCollection;
 use App\Http\Resources\UserCollection;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use Carbon\Carbon;
+use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -35,10 +38,19 @@ class UserController extends Controller
          * @var $user User
          */
         $user = Auth::user();
+        event(new MadeActivity($user));
         return $user->unreadNotifications;
+    }
+    public function getLastActivityTime($userId)
+    {
+        event(new MadeActivity(Auth::user()));
+        $user = User::find($userId);
+        $lastActivityTime = self::calculateLastActivity($user);
+        return $lastActivityTime;
     }
     public function update(UpdateUserInfoRequest $request)
     {
+        event(new MadeActivity(Auth::user()));
         $validated = $request->validated();
         $skillsOk = AuthController::hasEnoughSkills($validated['skills']);
         if ($skillsOk) {
@@ -111,6 +123,52 @@ class UserController extends Controller
         }
         return $user;
     }
+    public static function calculateLastActivity($user)
+    {
+
+        $timestamp = $user->last_activity_at;
+        if ($timestamp == null) {
+            return response([
+                'status' => 'never has been online'
+            ]);
+        }
+        $seconds = self::findDifferenceInSeconds($user->last_activity_at);
+        echo "$seconds\n";
+        $minutesAgo = floor($seconds / 60);
+        if ($minutesAgo <= 10) {
+            return response([
+                'status' => 'Online',
+            ]);
+        } else {
+            if ($minutesAgo < 60)
+                return response([
+                    'status' => "Online $minutesAgo minutes ago"
+                ]);
+            else {
+                $minutesAgo = $minutesAgo % 60;
+                $hoursAgo = floor($minutesAgo / 60);
+                if ($hoursAgo < 24)
+                    return response([
+                        'status' => "Online $hoursAgo hours and $minutesAgo minutes ago"
+                    ]);
+                else {
+                    $hoursAgo = $hoursAgo % 24;
+                    $daysAgo = $hoursAgo / 24;
+                    return response([
+                        'status' => "Online $daysAgo Days and $hoursAge hours and $minutesAgo minutes ago"
+                    ]);
+                }
+            }
+        }
+    }
+    public static function findDifferenceInSeconds($dateTime)
+    {
+        $timeFirst  = strtotime($dateTime);
+        $timeSecond = strtotime(time());
+        $differenceInSeconds = $timeSecond - $timeFirst;
+        return $differenceInSeconds;
+    }
+
     public static function updateAvatarImage(User $user, $file)
     {
         Storage::delete($user->avatar->path);

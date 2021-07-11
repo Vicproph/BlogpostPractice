@@ -26,6 +26,7 @@ Route::prefix('/users')->group(function () {
     Route::middleware('auth:sanctum')->post('/logout', 'api\AuthController@logout')->name('auth.logout');
     Route::middleware('auth:sanctum')->post('/edit', 'api\UserController@update')->name('users.update');
     Route::middleware('auth:sanctum')->post('/notifications', 'api\UserController@getUnreadNotifications');
+    Route::middleware('auth:sanctum')->post('/{id}/check-activity', 'api\UserController@getLastActivityTime');
 });
 
 Route::middleware('auth:sanctum')->prefix('/admins')->group(function () {
@@ -40,7 +41,7 @@ Route::middleware('auth:sanctum')->prefix('/admins')->group(function () {
 Route::prefix('/posts')->group(function () {
     Route::middleware('auth:sanctum')->get('/', 'api\PostController@index');
     Route::middleware('auth:sanctum')->post('/create', 'api\PostController@create');
-    Route::get('/{id}', 'api\PostController@show');
+    Route::middleware('auth:sanctum')->get('/{id}', 'api\PostController@show');
     Route::middleware('auth:sanctum')->get('{id}/like', 'api\PostController@like');
     Route::middleware('auth:sanctum')->post('{id}/comment', 'api\PostController@comment');
     Route::middleware('auth:sanctum')->post('{id}/comment-like', 'api\PostController@commentAndLike');

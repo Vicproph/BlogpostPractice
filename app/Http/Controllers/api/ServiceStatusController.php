@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Events\MadeActivity;
 use App\Http\Controllers\Controller;
 use App\Mail\NotifyRemainingLoginTimeMail;
 use App\Models\User;
@@ -20,13 +21,13 @@ class ServiceStatusController extends Controller
         try {
             $connectionStatus = DB::connection()->getPDO()->getAttribute(\PDO::ATTR_CONNECTION_STATUS);
             return response()->json([
-                'healthy'=> true,
-                'connection_status' =>$connectionStatus
+                'healthy' => true,
+                'connection_status' => $connectionStatus
             ]);
-        }catch (\PDOException $exception){
+        } catch (\PDOException $exception) {
             return response([
-                'healthy'=> false,
-                'cause' =>$exception->getMessage()
+                'healthy' => false,
+                'cause' => $exception->getMessage()
             ]);
         }
     }
@@ -36,16 +37,17 @@ class ServiceStatusController extends Controller
         /**
          * @var $user User
          */
+        event(new MadeActivity(Auth::user()));
         $user = Auth::user();
         try {
             Mail::to($user->email)->send(new NotifyRemainingLoginTimeMail());
             return response([
-               'healthy' => true
+                'healthy' => true
             ]);
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
             return response([
-                'healthy'=>false,
-                'cause'=> $exception->getMessage()
+                'healthy' => false,
+                'cause' => $exception->getMessage()
             ]);
         }
     }
