@@ -161,6 +161,20 @@
 			"name": "POST Requests",
 			"item": [
 				{
+					"name": "Post Approval",
+					"item": [
+						{
+							"name": "New Request",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": null
+							},
+							"response": []
+						}
+					]
+				},
+				{
 					"name": "Create",
 					"request": {
 						"auth": {
@@ -251,7 +265,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "29|JWySwr6kwOL3UVA1WunqSrTxK0eAFIBahliYXr78",
+									"value": "30|y4A7fwc9J9KClv1ra131R5JW1S9riG71ebTOlbeV",
 									"type": "string"
 								}
 							]
@@ -275,7 +289,7 @@
 							]
 						},
 						"url": {
-							"raw": "localhost:8000/api/posts/11/comment-like",
+							"raw": "localhost:8000/api/posts/12/comment-like",
 							"host": [
 								"localhost"
 							],
@@ -283,7 +297,7 @@
 							"path": [
 								"api",
 								"posts",
-								"11",
+								"12",
 								"comment-like"
 							]
 						}
