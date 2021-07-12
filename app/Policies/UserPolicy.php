@@ -101,6 +101,25 @@ class UserPolicy
     public function checkStatus(User $user)
     {
         return $user->isRole(Role::ROLE_ADMIN_TITLE);
-
+    }
+    public function approvePost(User $user)
+    {
+        return $user->isRole(Role::ROLE_ADMIN_TITLE);
+    }
+    public function unapprovePost(User $user)
+    {
+        return $user->isRole(Role::ROLE_ADMIN_TITLE);
+    }
+    public function unapprovedPosts(User $user)
+    {
+        return $user->isRole(Role::ROLE_ADMIN_TITLE);
+    }
+    public function checkServiceHealth(User $user)
+    {
+        return $user->isRole(Role::ROLE_ADMIN_TITLE);
+    }
+    public function showFromUser(User $user)
+    {
+        return $user->isRole(Role::ROLE_ADMIN_TITLE);
     }
 }

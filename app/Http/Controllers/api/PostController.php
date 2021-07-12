@@ -23,7 +23,10 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
+
 use function PHPUnit\Framework\matches;
+use function PHPUnit\Framework\returnSelf;
 
 class PostController extends Controller
 {
@@ -33,10 +36,12 @@ class PostController extends Controller
         $posts = Post::approved()->get();
         return response(new PostCollection($posts));
     }
+
+
     public function indexUnapproved()
     {
         $user = Auth::user();
-        if ($user->can('approvePost', Post::class)) {
+        if ($user->can('unapprovedPosts', Post::class)) {
             $posts = Post::unapproved()->get();
             return response(new PostCollection($posts));
         } else {
@@ -52,8 +57,15 @@ class PostController extends Controller
     }
     public function showFromUser($userId) // shows posts of a specific user
     {
-        $user = User::findOrFail($userId);
-        return new PostCollection($user->posts);
+        if (Auth::user()->can('showFromUser', Post::class)) {
+            $user = User::findOrFail($userId);
+            return new PostCollection($user->posts);
+        } else
+            return response([
+                'errors' => [
+                    'message' => __('messages.not_authorized')
+                ]
+            ]);
     }
 
     public function search($query)
@@ -173,36 +185,57 @@ class PostController extends Controller
 
     public function approvePost($id)
     {
-        $post = Post::unapproved()->where('id', $id)->first();
-        if ($post != null) {
-            $post->is_approved = true;
-            $post->save();
-            return response(new PostResource($post));
-        } else {
-            return response([
-                'error' => [
-                    'message' => __('messages.post_not_found')
+        $user = Auth::user();
+        if ($user->can('approvePost', Post::class)) {
+            $post = Post::unapproved()->where('id', $id)->first();
+            if ($post != null) {
+                $post->is_approved = true;
+                $post->save();
+                return response(new PostResource($post));
+            } else {
+                return response([
+                    'error' => [
+                        'message' => __('messages.post_not_found')
+                    ]
+                ]);
+            }
+        } else
+            return response(
+                [
+                    'errors' => [
+                        __('messages.not_authorized')
+                    ]
                 ]
-            ]);
-        }
+            );
     }
     public function unapprovePost(PostDisapprovalRequest $request, $id)
     {
-        $validated = $request->validated();
-        $post = $post = Post::unapproved()->where('id', $id)->first();
-        if ($post != null) {
-            $post->disapproval_body = $validated['body'];
-            $post->save();
-            event(new PostUnapproved($post));
-            return $post;
-        } else {
-            return response([
-                'error' => [
-                    'message' => __('messages.post_not_found')
+        $user = Auth::user();
+        if ($user->can('unapprovePost', Post::class)) {
+            $validated = $request->validated();
+            $post = $post = Post::unapproved()->where('id', $id)->first();
+            if ($post != null) {
+                $post->disapproval_body = $validated['body'];
+                $post->save();
+                event(new PostUnapproved($post));
+                return $post;
+            } else {
+                return response([
+                    'error' => [
+                        'message' => __('messages.post_not_found')
+                    ]
+                ]);
+            }
+        } else
+            return response(
+                [
+                    'errors' => [
+                        __('messages.not_authorized')
+                    ]
                 ]
-            ]);
-        }
+            );
     }
+
     private function decideHowToSort($posts, $orderingFactor, $direction)
     {
 

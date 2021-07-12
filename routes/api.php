@@ -28,7 +28,7 @@ Route::prefix('/users')->group(function () {
     Route::middleware('auth:sanctum')->post('/notifications', 'api\UserController@getUnreadNotifications');
 });
 
-Route::middleware('auth:sanctum')->prefix('/admin')->group(function () {
+Route::middleware('auth:sanctum')->prefix('/admins')->group(function () {
     Route::get('/posts/unapproved', 'api\PostController@indexUnapproved');
     Route::get('/posts/{id}/approve', 'api\PostController@approvePost'); // admin accepts
     Route::post('/posts/{id}/unapprove', 'api\PostController@unapprovePost'); // admin rejects
@@ -36,7 +36,6 @@ Route::middleware('auth:sanctum')->prefix('/admin')->group(function () {
     Route::get('/users/{id}/posts', 'api\PostController@showFromUser'); // shows posts of a specific user
     Route::get('/users/{id}/login', 'api\AuthController@loginInsteadOf'); // admin logs in in place of an other user
 });
-
 Route::prefix('/posts')->group(function () {
     Route::middleware('auth:sanctum')->get('/', 'api\PostController@index');
     Route::middleware('auth:sanctum')->post('/create', 'api\PostController@create');
@@ -48,7 +47,8 @@ Route::prefix('/posts')->group(function () {
     Route::middleware('auth:sanctum')->get('/search/{query}/{orderBy}', 'api\PostController@searchAndOrderBy');
 });
 
-Route::prefix('/status')->group(function (){ // Services Health checking
-    Route::post('/database','api\ServiceStatusController@checkDatabaseHealth');
-    Route::middleware('auth:sanctum')->post('/mail','api\ServiceStatusController@checkMailHealth');
+
+Route::prefix('/status')->group(function () { // Services Health checking
+    Route::post('/database', 'api\ServiceStatusController@checkDatabaseHealth');
+    Route::middleware('auth:sanctum')->post('/mail', 'api\ServiceStatusController@checkMailHealth');
 });

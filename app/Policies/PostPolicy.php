@@ -43,7 +43,7 @@ class PostPolicy
     public function create(User $user)
     {
         //
-        $hasSetPhoneNumber = $user->phone_number!=null;
+        $hasSetPhoneNumber = $user->phone_number != null;
         return $hasSetPhoneNumber;
     }
 
@@ -105,7 +105,12 @@ class PostPolicy
         return $this->create($user);
     }
 
-    public function approvePost(User $user){ // Only an admin can approve
+    public function approvePost(User $user)
+    { // Only an admin can approve
+        return $user->isRole(Role::ROLE_ADMIN_TITLE);
+    }
+    public function showFromUser(User $user)
+    {
         return $user->isRole(Role::ROLE_ADMIN_TITLE);
     }
 }

@@ -26,7 +26,11 @@ class UserController extends Controller
                 new UserCollection($users)
             ]);
         } else {
-            return response('messages.not_authorized');
+            return response([
+                'errors' => [
+                    'message' => __('messages.not_authorized')
+                ]
+            ]);
         }
     }
     public function getUnreadNotifications()

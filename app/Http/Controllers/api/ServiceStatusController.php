@@ -20,13 +20,13 @@ class ServiceStatusController extends Controller
         try {
             $connectionStatus = DB::connection()->getPDO()->getAttribute(\PDO::ATTR_CONNECTION_STATUS);
             return response()->json([
-                'healthy'=> true,
-                'connection_status' =>$connectionStatus
+                'healthy' => true,
+                'connection_status' => $connectionStatus
             ]);
-        }catch (\PDOException $exception){
+        } catch (\PDOException $exception) {
             return response([
-                'healthy'=> false,
-                'cause' =>$exception->getMessage()
+                'healthy' => false,
+                'cause' => $exception->getMessage()
             ]);
         }
     }
@@ -37,15 +37,21 @@ class ServiceStatusController extends Controller
          * @var $user User
          */
         $user = Auth::user();
+        if (!$user->can('checkServiceHealth', User::class))
+            return response([
+                'errors' => [
+                    'message' => __('messages.not_authorized')
+                ]
+            ]);
         try {
             Mail::to($user->email)->send(new NotifyRemainingLoginTimeMail());
             return response([
-               'healthy' => true
+                'healthy' => true
             ]);
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
             return response([
-                'healthy'=>false,
-                'cause'=> $exception->getMessage()
+                'healthy' => false,
+                'cause' => $exception->getMessage()
             ]);
         }
     }

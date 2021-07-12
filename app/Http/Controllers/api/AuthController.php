@@ -51,7 +51,7 @@ class AuthController extends Controller
                     if ($user->tokens != null) // اگر توکن قبلی ای وجود داشت آن را پاک می کند
                         $user->tokens()->delete();
                     $token = $user->createToken('access_token')->plainTextToken;
-                    event(new LoggedIn($user,$request->ip()));
+                    event(new LoggedIn($user, $request->ip()));
                     return response([
                         'user' => new UserResource($user),
                         'access_token' => $token,
@@ -80,9 +80,9 @@ class AuthController extends Controller
             } else { // Passed the recaptcha verification and should be allowed to log in
                 LoginAttempt::deleteLoginAttempts($request->ip());
                 return response([
-                    'captcha' =>$responseString,
-                    'message'=>'کپچا با موفقیت گذرانده شد، می توانید دوباره برای وارد شدن تلاش کنید'
-                ],200, [
+                    'captcha' => $responseString,
+                    'message' => 'کپچا با موفقیت گذرانده شد، می توانید دوباره برای وارد شدن تلاش کنید'
+                ], 200, [
                     'Content-Type' => 'application/json'
                 ]);
             }
