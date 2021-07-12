@@ -23,10 +23,13 @@ Route::prefix('/users')->group(function () {
     Route::post('/verify-account', 'api\EmailVerificationTokenController@verifyAccount')->name('users.verifyAccount');
     Route::get('/{id}/send-verification-code', 'api\EmailVerificationTokenController@sendVerificationCode')->name('users.sendVerificationCode');
     Route::post('/login', 'api\AuthController@login')->name('auth.login');
-    Route::middleware('auth:sanctum')->post('/logout', 'api\AuthController@logout')->name('auth.logout');
-    Route::middleware('auth:sanctum')->post('/edit', 'api\UserController@update')->name('users.update');
-    Route::middleware('auth:sanctum')->post('/notifications', 'api\UserController@getUnreadNotifications');
-    Route::middleware('auth:sanctum')->post('/{id}/check-activity', 'api\UserController@getLastActivityTime');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', 'api\AuthController@logout')->name('auth.logout');
+        Route::post('/edit', 'api\UserController@update')->name('users.update');
+        Route::post('/notifications', 'api\UserController@getUnreadNotifications');
+        Route::post('/{id}/check-activity', 'api\UserController@getLastActivityTime');
+    });
 });
 
 Route::middleware('auth:sanctum')->prefix('/admins')->group(function () {
@@ -37,18 +40,19 @@ Route::middleware('auth:sanctum')->prefix('/admins')->group(function () {
     Route::get('/users/{id}/posts', 'api\PostController@showFromUser'); // shows posts of a specific user
     Route::get('/users/{id}/login', 'api\AuthController@loginInsteadOf'); // admin logs in in place of an other user
 });
-Route::prefix('/posts')->group(function () {
-    Route::middleware('auth:sanctum')->get('/', 'api\PostController@index');
-    Route::middleware('auth:sanctum')->post('/create', 'api\PostController@create');
-    Route::middleware('auth:sanctum')->get('/{id}', 'api\PostController@show');
-    Route::middleware('auth:sanctum')->get('{id}/like', 'api\PostController@like');
-    Route::middleware('auth:sanctum')->post('{id}/comment', 'api\PostController@comment');
-    Route::middleware('auth:sanctum')->post('{id}/comment-like', 'api\PostController@commentAndLike');
-    Route::middleware('auth:sanctum')->get('/search/{query}', 'api\PostController@search');
-    Route::middleware('auth:sanctum')->get('/search/{query}/{orderBy}', 'api\PostController@searchAndOrderBy');
+Route::middleware('auth:sanctum')->prefix('/posts')->group(function () {
+    Route::get('/', 'api\PostController@index');
+    Route::post('/create', 'api\PostController@create');
+    Route::get('/{id}', 'api\PostController@show');
+    Route::get('{id}/like', 'api\PostController@like');
+    Route::post('{id}/comment', 'api\PostController@comment');
+    Route::post('{id}/comment-like', 'api\PostController@commentAndLike');
+    Route::get('/search/{query}', 'api\PostController@search');
+    Route::get('/search/{query}/{orderBy}', 'api\PostController@searchAndOrderBy');
 });
 
 Route::prefix('/status')->group(function () { // Services Health checking
     Route::post('/database', 'api\ServiceStatusController@checkDatabaseHealth');
     Route::middleware('auth:sanctum')->post('/mail', 'api\ServiceStatusController@checkMailHealth');
+    Route::middleware('auth:sanctum')->post('/redis', 'api\ServiceStatusController@checkRedisHealth');
 });

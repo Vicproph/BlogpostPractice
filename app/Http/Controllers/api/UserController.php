@@ -14,6 +14,7 @@ use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
@@ -50,14 +51,16 @@ class UserController extends Controller
         event(new MadeActivity(Auth::user()));
         $user = User::find($userId);
         $lastActivityTime = self::calculateLastActivity($user);
-        return $lastActivityTime;
+        self::setLastActivityTimeInRedis($user);
+        return;
     }
     public function update(UpdateUserInfoRequest $request)
     {
         event(new MadeActivity(Auth::user()));
         $validated = $request->validated();
-        $skillsOk = AuthController::hasEnoughSkills($validated['skills']);
-        if ($skillsOk) {
+        $skillsOk = (isset($validated['skills']) ?
+            AuthController::hasEnoughSkills($validated['skills']) : null);
+        if ($skillsOk === null) { // if skills are not set this will be null, if they are not correctly set this will be false
             if (self::hasEnteredAtLeastOneField($validated)) {
                 if ($this->hasNotEnteredIllegalFields($validated)) {
                     $user = $this->updateUserFromInputs($validated);
@@ -70,6 +73,12 @@ class UserController extends Controller
                         'message' => 'شما نمی توانید ایمیل یا شماره تلفن خود را تغییر دهید'
                     ]);
                 }
+            } else {
+                return response([
+                    'errors' => [
+                        'message' => 'هیچ فیلد ای وارد نشده است '
+                    ]
+                ]);
             }
         } else {
             return response([
@@ -80,8 +89,10 @@ class UserController extends Controller
     public static function hasEnteredAtLeastOneField($inputs): bool
     {
         $atLeastOneExists = false;
-        foreach ($inputs as $input)
+        foreach ($inputs as $input) {
+            var_dump($input);
             $atLeastOneExists = $input || $atLeastOneExists;
+        }
         return $atLeastOneExists;
     }
     private function hasNotEnteredIllegalFields($inputs): bool
@@ -95,7 +106,7 @@ class UserController extends Controller
         /**
          * @var $user User
          */
-        $user = User::find($inputs['id']);
+        $user = Auth::user();
         $username = $inputs['username'] ?? null;
         $password = $inputs['password'] ?? null;
         $avatar = $inputs['avatar'] ?? null;
@@ -137,7 +148,6 @@ class UserController extends Controller
             ]);
         }
         $seconds = self::findDifferenceInSeconds($user->last_activity_at);
-        echo "$seconds\n";
         $minutesAgo = floor($seconds / 60);
         if ($minutesAgo <= 10) {
             return response([
@@ -178,5 +188,12 @@ class UserController extends Controller
         Storage::delete($user->avatar->path);
         $user->avatar()->delete();
         AuthController::saveAvatar($user, $file);
+    }
+    public static function setLastActivityTimeInRedis($user)
+    {
+        Redis::command('HMSET', [
+            "users_{$user->id}", 'last_activity_at', $user->last_activity_at
+        ]);
+        return Redis::hget("users_{$user->id}", 'last_activity_at');
     }
 }

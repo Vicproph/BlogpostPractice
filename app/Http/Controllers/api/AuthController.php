@@ -19,14 +19,12 @@ use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redis;
 use Psr\Http\Message\ResponseInterface;
 
 class AuthController extends Controller
 {
     // Google ReCaptcha stuff
-    const SITE_KEY = '6Lc2-ocbAAAAAAqvPhGD3eCya-EX9Bn9Wrdp4FyW';
-    const SECRET_KEY = '6Lc2-ocbAAAAAJzYxUdqn_KaOKL0dB5TzA0Wf6yw';
-    const VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
 
     // some ordinary responses
 
@@ -40,7 +38,7 @@ class AuthController extends Controller
             $phoneNumber = $request->input('phone_number');
             $username = $request->input('username');
             $password = $request->input('password');
-            if ($this->enteredAtLeastOneId($email, $phoneNumber, $username)) {
+            if ($this->enteredAtLeastOneIdentifier($email, $phoneNumber, $username)) {
                 $user = $this->fetchUser($email, $phoneNumber, $username);
                 if (!$user) {
                     LoginAttempt::incrementLoginAttempts($request->ip());
@@ -50,18 +48,15 @@ class AuthController extends Controller
                 }
 
                 if (Hash::check($password, $user->password)) {
-                    if ($user->tokens != null) // اگر توکن قبلی ای وجود داشت آن را پاک می کند
+                    if ($user->tokens != null) { // اگر توکن قبلی ای وجود داشت آن را پاک می کند
                         $user->tokens()->delete();
+                    }
                     $token = $user->createToken('access_token')->plainTextToken;
                     event(new LoggedIn($user, $request->ip()));
-                    event(new MadeActivity($user));
-                    $user->last_login_at = date('Y-m-d h:i:s');
-                    $user->save();
-
                     return response([
                         'user' => new UserResource($user),
                         'access_token' => $token,
-                        'message' => 'مدت زمان وارد بودن در سیستم 10 دقیقه است، پس از آن نیاز به وارد شدن دوباره دارید'
+                        'message' => 'مدت زمان وارد بودن در سیستم 10 دقیقه است، پس از آن نیاز به وارد شدن دوباره دارید',
                     ]);
                 } else {
                     LoginAttempt::incrementLoginAttempts($request->ip());
@@ -126,6 +121,7 @@ class AuthController extends Controller
         /**
          * @var $user User
          */
+
         $user = Auth::user();
         event(new MadeActivity($user));
         $user->tokens()->delete();
@@ -146,12 +142,19 @@ class AuthController extends Controller
             self::setSkills($user, $validated['skills']);
             event(new Registered($user));
             $avatar = $user->avatar;
+            $pluckedSkills = $user->skills()->get()->pluck('id', 'skill_title');
             return response([
-                'user' => [
-                    'main_data' => $user,
-                ],
-                'avatar' => $avatar,
-                'skills' => $user->skills
+                'user' => $user->only([
+                    'id',
+                    'firstname',
+                    'lastname',
+                ]),
+
+                'avatar' => $avatar->only([
+                    'id',
+                    'path'
+                ]),
+                'skills' => $pluckedSkills
             ]);
         } else {
             return response([
@@ -163,7 +166,7 @@ class AuthController extends Controller
     public static function hasEnoughSkills($skills)
     {
         // این تابع چک می کند که تعداد مهارت ها مجاز است یا خیر
-        $skillCount = substr_count($skills, "\n") + 1; // an N line string has N-1 line-breaks
+        $skillCount = count($skills); // an N line string has N-1 line-breaks
         return $skillCount >= 3 && $skillCount <= 10;
     }
 
@@ -195,7 +198,6 @@ class AuthController extends Controller
         /**
          * @var $user User
          */
-        $skills = explode("\n", $skills);
         foreach ($skills as $skill) {
             if (!self::existsInSkillsTable($skill)) {
                 $user->skills()->create(['skill_title' => $skill]);
@@ -228,7 +230,7 @@ class AuthController extends Controller
         return $user;
     }
 
-    private function enteredAtLeastOneId($email, $phoneNumber, $username)
+    private function enteredAtLeastOneIdentifier($email, $phoneNumber, $username)
     {
         return ($email != null) || ($phoneNumber != null) || ($username != null);
     }
@@ -238,16 +240,24 @@ class AuthController extends Controller
         $client = new Client();
         $captchaResponse = $request->input('captcha_response');
 
-        $response = $client->post(self::VERIFY_URL, [
+        $response = $client->post(env('VERIFY_URL'), [
             'headers' => [
                 'Accept' => 'application/json'
             ],
             'form_params' => [
-                'secret' => self::SECRET_KEY,
+                'secret' => env('SECRET_KEY'),
                 'response' => $captchaResponse,
                 'remoteip' => $request->ip()
             ]
         ]);
         return $response;
+    }
+    public static function setLoginTimeInRedis($user)
+    {
+        echo $user->id;
+        Redis::command('HMSET', [
+            "users_{$user->id}", 'last_login_at', $user->last_login_at
+        ]);
+        return Redis::hget("users_{$user->id}", 'last_login_at');
     }
 }

@@ -9,33 +9,35 @@ use Illuminate\Support\Facades\DB;
 class Post extends Model
 {
     use HasFactory;
-    protected $guarded=[];
+    protected $guarded = [];
 
-    public function scopeSearch($query,$searchQuery)
+    public function scopeSearch($query, $searchQuery)
     {
-        return $query->where('title','LIKE','%'.$searchQuery.'%')->
-        orWhere('body','LIKE','%'.$searchQuery.'%');
+        return $query->where('title', 'LIKE', '%' . $searchQuery . '%')->orWhere('body', 'LIKE', '%' . $searchQuery . '%');
     }
-    public function scopeSortByLikes($query,$direction){
+    public function scopeSortByLikes($query, $direction)
+    {
         return $query->withCount('likes')
-            ->orderBy('likes_count',$direction);
+            ->orderBy('likes_count', $direction);
     }
 
     public function scopeSortByComments($query, $direction)
     {
         return $query->withCount('comments')
-            ->orderBy('comments_count',$direction);
+            ->orderBy('comments_count', $direction);
     }
 
-    public function scopeSortByDate($query,$direction)
+    public function scopeSortByDate($query, $direction)
     {
-        return $query->orderBy('created_at',$direction);
+        return $query->orderBy('created_at', $direction);
     }
-    public function scopeApproved($query){ // posts approved by an admin
-        $query->where('is_approved',1);
+    public function scopeApproved($query)
+    { // posts approved by an admin
+        return $query->where('is_approved', 1);
     }
-    public function scopeUnapproved($query){ // posts not approved by an admin
-        $query->where('is_approved',0);
+    public function scopeUnapproved($query)
+    { // posts not approved by an admin
+        return $query->where('is_approved', 0);
     }
     public function user()
     {

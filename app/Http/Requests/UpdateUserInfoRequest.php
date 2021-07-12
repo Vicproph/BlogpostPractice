@@ -25,14 +25,13 @@ class UpdateUserInfoRequest extends FormRequest
     {
         return [
             //
-            'firstname' =>['nullable',],
-            'lastname'=>['nullable',],
-            'avatar'=>['nullable','image','max:2000'],
-            'username'=>['nullable','unique:users'],
-            'description'=>['nullable','min:80'],
-            'skills'=>['nullable'],
-            'password' =>['nullable'],
-            'id'=>['required']
+            'firstname' => ['nullable',],
+            'lastname' => ['nullable',],
+            'avatar' => ['nullable', 'image', 'max:2000'],
+            'username' => ['nullable', 'unique:users'],
+            'description' => ['nullable', 'min:80'],
+            'skills' => ['nullable'],
+            'password' => ['nullable'],
         ];
     }
 }

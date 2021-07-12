@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\MadeActivity;
+use App\Http\Controllers\api\UserController;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
@@ -29,6 +30,7 @@ class ReportActivity
         //
         $user = $event->user;
         $user->last_activity_at = date('Y-m-d h:i:s');
+        UserController::setLastActivityTimeInRedis($user);
         $user->save();
     }
 }

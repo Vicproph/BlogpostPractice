@@ -125,7 +125,10 @@ class PostController extends Controller
         $user = Auth::user();
         $validated = $request->validated();
         if ($user->can('create', Post::class)) {
-            $post = $user->posts()->create(['title' => $validated['title'], 'body' => $validated['body']]);
+            $post = $user->posts()->create([
+                'title' => $validated['title'],
+                 'body' => $validated['body']]
+                );
             return $post;
         } else {
             return response([
@@ -188,7 +191,6 @@ class PostController extends Controller
 
     public function approvePost($id)
     {
-<<<<<<< HEAD
         $user = Auth::user();
         if ($user->can('approvePost', Post::class)) {
             $post = Post::unapproved()->where('id', $id)->first();
@@ -209,24 +211,11 @@ class PostController extends Controller
                     'errors' => [
                         __('messages.not_authorized')
                     ]
-=======
-        event(new MadeActivity(Auth::user()));
-        $post = Post::unapproved()->where('id', $id)->first();
-        if ($post != null) {
-            $post->is_approved = true;
-            $post->save();
-            return response(new PostResource($post));
-        } else {
-            return response([
-                'error' => [
-                    'message' => __('messages.post_not_found')
->>>>>>> bcc1f418c12711710e611e964b0eff36097513e1
                 ]
             );
     }
     public function unapprovePost(PostDisapprovalRequest $request, $id)
     {
-<<<<<<< HEAD
         $user = Auth::user();
         if ($user->can('unapprovePost', Post::class)) {
             $validated = $request->validated();
@@ -249,20 +238,6 @@ class PostController extends Controller
                     'errors' => [
                         __('messages.not_authorized')
                     ]
-=======
-        event(new MadeActivity(Auth::user()));
-        $validated = $request->validated();
-        $post = $post = Post::unapproved()->where('id', $id)->first();
-        if ($post != null) {
-            $post->disapproval_body = $validated['body'];
-            $post->save();
-            event(new PostUnapproved($post));
-            return $post;
-        } else {
-            return response([
-                'error' => [
-                    'message' => __('messages.post_not_found')
->>>>>>> bcc1f418c12711710e611e964b0eff36097513e1
                 ]
             );
     }
