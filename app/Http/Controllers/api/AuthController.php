@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Events\LoggedIn;
+use App\Events\MadeActivity;
 use App\Events\Registered;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRegisterRequest;
@@ -12,6 +13,7 @@ use App\Models\LoginAttempt;
 use App\Models\Role;
 use App\Models\Skill;
 use App\Models\User;
+use DateTime;
 use GuzzleHttp\Client;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Http\Request;
@@ -52,6 +54,10 @@ class AuthController extends Controller
                         $user->tokens()->delete();
                     $token = $user->createToken('access_token')->plainTextToken;
                     event(new LoggedIn($user, $request->ip()));
+                    event(new MadeActivity($user));
+                    $user->last_login_at = date('Y-m-d h:i:s');
+                    $user->save();
+
                     return response([
                         'user' => new UserResource($user),
                         'access_token' => $token,
@@ -91,6 +97,7 @@ class AuthController extends Controller
 
     public function loginInsteadOf($id) // Only admins can do this
     {
+        event(new MadeActivity(Auth::user()));
         if (Auth::user()->can('loginInsteadOf', User::class)) {
             $user = User::findOrFail($id);
             if ($user->isRole(Role::ROLE_USER_TITLE)) {
@@ -120,6 +127,7 @@ class AuthController extends Controller
          * @var $user User
          */
         $user = Auth::user();
+        event(new MadeActivity($user));
         $user->tokens()->delete();
         return response([
             'message' => 'شما با موفقیت از سیستم خارج شدید'

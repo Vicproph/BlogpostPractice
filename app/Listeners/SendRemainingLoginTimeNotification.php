@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\LoggedIn;
+use App\Events\MadeActivity;
 use App\Mail\NotifyRemainingLoginTimeMail;
 use App\Models\User;
 use App\Notifications\LoginNotification;
@@ -30,12 +31,11 @@ class SendRemainingLoginTimeNotification implements ShouldQueue
      */
     public function handle(LoggedIn $event)
     {
-        //
-        //Mail::to($event->user->email)->send(new NotifyRemainingLoginTimeMail());
         /**
          * @var $user User
          */
         $user = $event->user;
+        event(new MadeActivity($user));
         $user->notify(new LoginNotification());
     }
 }

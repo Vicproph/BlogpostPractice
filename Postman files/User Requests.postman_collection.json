@@ -41,6 +41,83 @@
 			"name": "POST Requests",
 			"item": [
 				{
+					"name": "Status Checking Requests (Admins Only)",
+					"item": [
+						{
+							"name": "Database",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "43|wtRKmrBnGZtlt4S25URwlU7Vq4ddpzuuOhlzMMm3",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "localhost:8000/api/status/database",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"status",
+										"database"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Mail",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "44|UQafK686mC9pUKHDu2hLWoJAac2Q0DYIYZKXGiAL",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "localhost:8000/api/status/mail",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"status",
+										"mail"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
 					"name": "Login",
 					"request": {
 						"method": "POST",

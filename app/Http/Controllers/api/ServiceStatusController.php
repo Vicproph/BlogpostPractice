@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Events\MadeActivity;
 use App\Http\Controllers\Controller;
 use App\Mail\NotifyRemainingLoginTimeMail;
 use App\Models\User;
@@ -36,6 +37,7 @@ class ServiceStatusController extends Controller
         /**
          * @var $user User
          */
+        event(new MadeActivity(Auth::user()));
         $user = Auth::user();
         if (!$user->can('checkServiceHealth', User::class))
             return response([

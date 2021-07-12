@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Events\MadeActivity;
 use App\Events\PostUnapproved;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CommentRequest;
@@ -33,6 +34,7 @@ class PostController extends Controller
     //
     public function index()
     {
+        event(new MadeActivity(Auth::user()));
         $posts = Post::approved()->get();
         return response(new PostCollection($posts));
     }
@@ -40,6 +42,7 @@ class PostController extends Controller
 
     public function indexUnapproved()
     {
+        event(new MadeActivity(Auth::user()));
         $user = Auth::user();
         if ($user->can('unapprovedPosts', Post::class)) {
             $posts = Post::unapproved()->get();
@@ -52,31 +55,28 @@ class PostController extends Controller
     }
     public function show($id)
     {
+        event(new MadeActivity(Auth::user()));
         $post = Post::approved()->findOrFail($id);
         return new PostResource($post);
     }
     public function showFromUser($userId) // shows posts of a specific user
     {
-        if (Auth::user()->can('showFromUser', Post::class)) {
-            $user = User::findOrFail($userId);
-            return new PostCollection($user->posts);
-        } else
-            return response([
-                'errors' => [
-                    'message' => __('messages.not_authorized')
-                ]
-            ]);
+        event(new MadeActivity(Auth::user()));
+        $user = User::findOrFail($userId);
+        return new PostCollection($user->posts->where('is_approved', true));
     }
 
     public function search($query)
     {
+        event(new MadeActivity(Auth::user()));
 
-        $matches = Post::search($query)->get();
+        $matches = Post::approved()->search($query)->get();
         return new PostCollection($matches);
     }
 
     public function searchAndOrderBy($query, $orderBy)
     {
+        event(new MadeActivity(Auth::user()));
         //پارامتر دوم می تواند مقدار های زیر را داشته باشد
         // orderBy == likes-asc || likes-desc || created_at-desc || created_at-asc ||comments-desc || comments-asc
         $orderingFactor = null;
@@ -110,7 +110,7 @@ class PostController extends Controller
          * @var $matches Collection
          */
         // قطعه کد زیر تصمیم می گیرد که چطور پست ها را بر اساس چه فاکتوری مرتب کند
-        $matches = Post::search($query);
+        $matches = Post::approved()->search($query);
         $sortedMatches = $this->decideHowToSort($matches, $orderingFactor, $direction);
 
         return new PostCollection($sortedMatches);
@@ -118,6 +118,7 @@ class PostController extends Controller
 
     public function create(PostCreateRequest $request)
     {
+        event(new MadeActivity(Auth::user()));
         /**
          * @var $user User
          */
@@ -135,13 +136,14 @@ class PostController extends Controller
 
     public function like($id)
     {
+        event(new MadeActivity(Auth::user()));
         /**
          * @var $user User
          */
 
         $user = Auth::user();
         if ($user->can('like', Post::class)) {
-            $post = Post::find($id);
+            $post = Post::approved()->find($id);
             if ($post == null) {
                 return response([
                     'message' => 'چنین پستی وجود ندارد'
@@ -162,7 +164,8 @@ class PostController extends Controller
 
     public function comment(CommentRequest $request, $id)
     {
-        $post = Post::find($id);
+        event(new MadeActivity(Auth::user()));
+        $post = Post::approved()->find($id);
         if ($post == null) {
             return response([
                 'message' => 'چنین پستی وجود ندارد'
@@ -185,6 +188,7 @@ class PostController extends Controller
 
     public function approvePost($id)
     {
+<<<<<<< HEAD
         $user = Auth::user();
         if ($user->can('approvePost', Post::class)) {
             $post = Post::unapproved()->where('id', $id)->first();
@@ -205,11 +209,24 @@ class PostController extends Controller
                     'errors' => [
                         __('messages.not_authorized')
                     ]
+=======
+        event(new MadeActivity(Auth::user()));
+        $post = Post::unapproved()->where('id', $id)->first();
+        if ($post != null) {
+            $post->is_approved = true;
+            $post->save();
+            return response(new PostResource($post));
+        } else {
+            return response([
+                'error' => [
+                    'message' => __('messages.post_not_found')
+>>>>>>> bcc1f418c12711710e611e964b0eff36097513e1
                 ]
             );
     }
     public function unapprovePost(PostDisapprovalRequest $request, $id)
     {
+<<<<<<< HEAD
         $user = Auth::user();
         if ($user->can('unapprovePost', Post::class)) {
             $validated = $request->validated();
@@ -232,6 +249,20 @@ class PostController extends Controller
                     'errors' => [
                         __('messages.not_authorized')
                     ]
+=======
+        event(new MadeActivity(Auth::user()));
+        $validated = $request->validated();
+        $post = $post = Post::unapproved()->where('id', $id)->first();
+        if ($post != null) {
+            $post->disapproval_body = $validated['body'];
+            $post->save();
+            event(new PostUnapproved($post));
+            return $post;
+        } else {
+            return response([
+                'error' => [
+                    'message' => __('messages.post_not_found')
+>>>>>>> bcc1f418c12711710e611e964b0eff36097513e1
                 ]
             );
     }
