@@ -254,7 +254,6 @@ class AuthController extends Controller
     }
     public static function setLoginTimeInRedis($user)
     {
-        echo $user->id;
         Redis::command('HMSET', [
             "users_{$user->id}", 'last_login_at', $user->last_login_at
         ]);

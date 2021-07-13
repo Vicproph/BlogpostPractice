@@ -194,6 +194,5 @@ class UserController extends Controller
         Redis::command('HMSET', [
             "users_{$user->id}", 'last_activity_at', $user->last_activity_at
         ]);
-        return Redis::hget("users_{$user->id}", 'last_activity_at');
     }
 }

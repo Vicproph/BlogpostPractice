@@ -26,11 +26,10 @@ class ServiceStatusController extends Controller
                 'healthy' => true,
                 'connection_status' => $connectionStatus
             ]);
-        } catch (\PDOException $exception) {
+        } catch (Exception $exception) {
             return response([
                 'healthy' => false,
                 'cause' => $exception->getMessage()
-                Redis
             ]);
         }
     }
@@ -64,14 +63,14 @@ class ServiceStatusController extends Controller
     {
 
         try {
-            Redis::hget('null','null');// just some random command to see if redis responds
+            Redis::hget('null', 'null'); // just some random command to see if redis responds
             return response([
                 'healthy' => true,
-            ])
+            ]);
         } catch (Exception $exception) {
             return response([
-                'healthy' =>false,
-                'cause' =>[
+                'healthy' => false,
+                'cause' => [
                     $exception->getMessage()
                 ]
             ]);
