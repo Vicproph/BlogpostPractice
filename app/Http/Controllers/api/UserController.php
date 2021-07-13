@@ -24,19 +24,12 @@ class UserController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->can('viewAny', User::class)) {
-            $users = User::all();
-            return response([
-                new UserCollection($users)
-            ]);
-        } else {
-            return response([
-                'errors' => [
-                    'message' => __('messages.not_authorized')
-                ]
-            ]);
-        }
+        $users = User::all();
+        return response([
+            new UserCollection($users)
+        ]);
     }
+
     public function getUnreadNotifications()
     {
         /**
@@ -147,7 +140,9 @@ class UserController extends Controller
                 'status' => 'never has been online'
             ]);
         }
-        $seconds = self::findDifferenceInSeconds($user->last_activity_at);
+        $then = new Carbon($timestamp);
+        $now = new Carbon(date('Y-m-d h:i:s'));
+        $seconds = $now->diffInSeconds($then);
         $minutesAgo = floor($seconds / 60);
         if ($minutesAgo <= 10) {
             return response([
@@ -159,29 +154,23 @@ class UserController extends Controller
                     'status' => "Online $minutesAgo minutes ago"
                 ]);
             else {
-                $minutesAgo = $minutesAgo % 60;
                 $hoursAgo = floor($minutesAgo / 60);
+                $minutesAgo = $minutesAgo % 60;
                 if ($hoursAgo < 24)
                     return response([
                         'status' => "Online $hoursAgo hours and $minutesAgo minutes ago"
                     ]);
                 else {
-                    $hoursAgo = $hoursAgo % 24;
                     $daysAgo = $hoursAgo / 24;
+                    $hoursAgo = $hoursAgo % 24;
                     return response([
-                        'status' => "Online $daysAgo Days and $hoursAge hours and $minutesAgo minutes ago"
+                        'status' => "Online $daysAgo Days and $hoursAgo hours and $minutesAgo minutes ago"
                     ]);
                 }
             }
         }
     }
-    public static function findDifferenceInSeconds($dateTime)
-    {
-        $timeFirst  = strtotime($dateTime);
-        $timeSecond = strtotime(time());
-        $differenceInSeconds = $timeSecond - $timeFirst;
-        return $differenceInSeconds;
-    }
+
 
     public static function updateAvatarImage(User $user, $file)
     {

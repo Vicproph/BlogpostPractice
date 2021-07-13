@@ -93,27 +93,19 @@ class AuthController extends Controller
     public function loginInsteadOf($id) // Only admins can do this
     {
         event(new MadeActivity(Auth::user()));
-        if (Auth::user()->can('loginInsteadOf', User::class)) {
-            $user = User::findOrFail($id);
-            if ($user->isRole(Role::ROLE_USER_TITLE)) {
-                $token = $user->createToken('admin_access_token')->plainTextToken;
-                return response([
-                    'admin_access_token' => $token
-                ]);
-            } else {
-                return response([
-                    'errors' => [
-                        'message' => 'شما تنها می توانید به عنوان کاربر وارد شوید'
-                    ]
-                ]);
-            }
+        $user = User::findOrFail($id);
+        if ($user->isRole(Role::ROLE_USER_TITLE)) {
+            $token = $user->createToken('admin_access_token')->plainTextToken;
+            return response([
+                'admin_access_token' => $token
+            ]);
         } else {
             return response([
                 'errors' => [
-                    'message' => __('messages.not_authorized')
+                    'message' => 'شما تنها می توانید به عنوان کاربر وارد شوید'
                 ]
             ]);
-        };
+        }
     }
 
     public function logout()

@@ -44,14 +44,8 @@ class PostController extends Controller
     {
         event(new MadeActivity(Auth::user()));
         $user = Auth::user();
-        if ($user->can('unapprovedPosts', Post::class)) {
-            $posts = Post::unapproved()->get();
-            return response(new PostCollection($posts));
-        } else {
-            return response([
-                'message' => __('messages.not_authorized')
-            ]);
-        }
+        $posts = Post::unapproved()->get();
+        return response(new PostCollection($posts));
     }
     public function show($id)
     {
@@ -125,10 +119,12 @@ class PostController extends Controller
         $user = Auth::user();
         $validated = $request->validated();
         if ($user->can('create', Post::class)) {
-            $post = $user->posts()->create([
-                'title' => $validated['title'],
-                 'body' => $validated['body']]
-                );
+            $post = $user->posts()->create(
+                [
+                    'title' => $validated['title'],
+                    'body' => $validated['body']
+                ]
+            );
             return $post;
         } else {
             return response([
@@ -192,54 +188,36 @@ class PostController extends Controller
     public function approvePost($id)
     {
         $user = Auth::user();
-        if ($user->can('approvePost', Post::class)) {
-            $post = Post::unapproved()->where('id', $id)->first();
-            if ($post != null) {
-                $post->is_approved = true;
-                $post->save();
-                return response(new PostResource($post));
-            } else {
-                return response([
-                    'error' => [
-                        'message' => __('messages.post_not_found')
-                    ]
-                ]);
-            }
-        } else
-            return response(
-                [
-                    'errors' => [
-                        __('messages.not_authorized')
-                    ]
+        $post = Post::unapproved()->where('id', $id)->first();
+        if ($post != null) {
+            $post->is_approved = true;
+            $post->save();
+            return response(new PostResource($post));
+        } else {
+            return response([
+                'error' => [
+                    'message' => __('messages.post_not_found')
                 ]
-            );
+            ]);
+        }
     }
     public function unapprovePost(PostDisapprovalRequest $request, $id)
     {
         $user = Auth::user();
-        if ($user->can('unapprovePost', Post::class)) {
-            $validated = $request->validated();
-            $post = $post = Post::unapproved()->where('id', $id)->first();
-            if ($post != null) {
-                $post->disapproval_body = $validated['body'];
-                $post->save();
-                event(new PostUnapproved($post));
-                return $post;
-            } else {
-                return response([
-                    'error' => [
-                        'message' => __('messages.post_not_found')
-                    ]
-                ]);
-            }
-        } else
-            return response(
-                [
-                    'errors' => [
-                        __('messages.not_authorized')
-                    ]
+        $validated = $request->validated();
+        $post = $post = Post::unapproved()->where('id', $id)->first();
+        if ($post != null) {
+            $post->disapproval_body = $validated['body'];
+            $post->save();
+            event(new PostUnapproved($post));
+            return $post;
+        } else {
+            return response([
+                'error' => [
+                    'message' => __('messages.post_not_found')
                 ]
-            );
+            ]);
+        }
     }
 
     private function decideHowToSort($posts, $orderingFactor, $direction)

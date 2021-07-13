@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\AuthController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\api\UserController;
+use App\Http\Middleware\EnsureIsAdmin;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -34,7 +36,7 @@ Route::group(['namespace' => 'api\\'], function () {
         });
     });
 
-    Route::middleware('auth:sanctum')->prefix('/admins')->group(function () {
+    Route::middleware(['auth:sanctum', 'admin'])->prefix('/admins')->group(function () {
         Route::get('/posts/unapproved', 'PostController@indexUnapproved');
         Route::get('/posts/{id}/approve', 'PostController@approvePost'); // admin accepts
         Route::post('/posts/{id}/unapprove', 'PostController@unapprovePost'); // admin rejects
@@ -55,7 +57,7 @@ Route::group(['namespace' => 'api\\'], function () {
 
     Route::prefix('/status')->group(function () { // Services Health checking
         Route::post('/database', 'ServiceStatusController@checkDatabaseHealth');
-        Route::middleware('auth:sanctum')->post('/mail', 'ServiceStatusController@checkMailHealth');
-        Route::middleware('auth:sanctum')->post('/redis', 'ServiceStatusController@checkRedisHealth');
+        Route::middleware(['auth:sanctum', 'admin'])->post('/mail', 'ServiceStatusController@checkMailHealth');
+        Route::middleware(['auth:sanctum', 'admin'])->post('/redis', 'ServiceStatusController@checkRedisHealth');
     });
 });

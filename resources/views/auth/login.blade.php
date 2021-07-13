@@ -13,21 +13,27 @@
             @csrf
             <div class="form-group my-4">
                 <label for="">Identifier</label>
-                <input type="email" name="email" id="">
+                <input id="email" type="email" name="email" id="">
             </div>
             <div class="form-group my-4">
                 <label for="">Password</label>
-                <input type="password" name="password" id="">
+                <input id="password" type="password" name="password" id="">
             </div>
             <button type="submit" class="g- btn btn-primary" 
             data-sitekey="{{env("SITE_KEY")}}">Submit</button>
-            <div class="g-recaptcha" data-sitekey="your_site_key"></div>
+            <div class="g-recaptcha" data-sitekey="{{env('SITE_KEY')}}" id="recap"></div>
 
         </form>
-        <script>
-            function onSubmit(token) {
-              document.getElementById("form").submit();
+        <script type="text/javascript">
+            document.getElementById('form').addEventListener('submit',submitForm);
+            function submitForm(e){
+                e.preventDefault();
+                const email = document.querySelector('#password').value
+                const password = document.querySelector('#password').value
+                const captcha = document.querySelector('#g-recaptcha-response')
+
+                fetch('/subscribe')
             }
-          </script>
+        </script>
     </div>
 @endsection

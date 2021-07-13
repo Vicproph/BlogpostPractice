@@ -41,12 +41,6 @@ class ServiceStatusController extends Controller
          */
         event(new MadeActivity(Auth::user()));
         $user = Auth::user();
-        if (!$user->can('checkServiceHealth', User::class))
-            return response([
-                'errors' => [
-                    'message' => __('messages.not_authorized')
-                ]
-            ]);
         try {
             Mail::to($user->email)->send(new NotifyRemainingLoginTimeMail());
             return response([
