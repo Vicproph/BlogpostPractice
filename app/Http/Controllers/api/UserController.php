@@ -144,7 +144,7 @@ class UserController extends Controller
         $now = new Carbon(date('Y-m-d h:i:s'));
         $seconds = $now->diffInSeconds($then);
         $minutesAgo = floor($seconds / 60);
-        if ($minutesAgo <= 10) {
+        if ($minutesAgo <= 1) {
             return response([
                 'status' => 'Online',
             ]);
