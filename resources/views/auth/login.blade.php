@@ -13,26 +13,62 @@
             @csrf
             <div class="form-group my-4">
                 <label for="">Identifier</label>
-                <input id="email" type="email" name="email" id="">
+                <input id="email" type="email" name="email" id="email">
             </div>
             <div class="form-group my-4">
                 <label for="">Password</label>
-                <input id="password" type="password" name="password" id="">
+                <input id="password" type="password" name="password" id="password">
             </div>
-            <button type="submit" class="g- btn btn-primary" 
-            data-sitekey="{{env("SITE_KEY")}}">Submit</button>
-            <div class="g-recaptcha" data-sitekey="{{env('SITE_KEY')}}" id="recap"></div>
+            <div class="g-recaptcha" style="display: none;" data-sitekey="{{env('SITE_KEY')}}"></div>
+
+            <button type="submit" class="mt-4 btn btn-primary">Submit</button>
 
         </form>
         <script type="text/javascript">
             document.getElementById('form').addEventListener('submit',submitForm);
             function submitForm(e){
                 e.preventDefault();
-                const email = document.querySelector('#password').value
+                const email = document.querySelector('#email').value
                 const password = document.querySelector('#password').value
-                const captcha = document.querySelector('#g-recaptcha-response')
+                const submitButtonTag = document.querySelector('form button');
+                fetch('api/users/login',{
+                    method: 'POST',
+                    headers:{
+                        'Accept':'application/json, text/plain, */*',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email:email,
+                        password:password,
+                        captcha_response: grecaptcha.getResponse()
+                    })
+                })
+                .then((response)=>response.json())
+                .then((data)=>{
+                    
+                    if (data.reached_login_attempts_limit === true){ // reCaptcha now has to be activated
+                        grecaptcha.reset()
+                        let captchaDiv = submitButtonTag.previousElementSibling;
+                        if (captchaDiv.style.display =='none'){
+                            captchaDiv.style.display = 'block';
+                        }
+                        if (data.captcha.success ===false){
+                            
+                            alert('Please complete the reCaptcha process');
+                        }
+                        
+                    }
+                    else if (data.reached_login_attempts_limit === false){ // Invalid creds
+                        alert('Invalid Creds');
+                    }
+                    
+                    else if (data.reached_login_attempts_limit == undefined && data.id !=undefined){
+                        document.querySelector('#form').submit();
+                    }
+                    console.log(data);
 
-                fetch('/subscribe')
+                });
+                    
             }
         </script>
     </div>

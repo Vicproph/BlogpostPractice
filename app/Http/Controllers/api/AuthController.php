@@ -43,7 +43,8 @@ class AuthController extends Controller
                 if (!$user) {
                     LoginAttempt::incrementLoginAttempts($request->ip());
                     return response([
-                        'message' => 'کاربر وجود ندارد'
+                        'message' => 'کاربر وجود ندارد',
+                        'reached_login_attempts_limit' => LoginAttempt::reachedMaximumAllowedLoginAttempt($request->ip())
                     ]);
                 }
 
@@ -61,13 +62,15 @@ class AuthController extends Controller
                 } else {
                     LoginAttempt::incrementLoginAttempts($request->ip());
                     return response([
-                        'message' => 'اطلاعات ورود نامعتبر است'
+                        'message' => 'اطلاعات ورود نامعتبر است',
+                        'reached_login_attempts_limit' => LoginAttempt::reachedMaximumAllowedLoginAttempt($request->ip())
                     ]);
                 }
             } else {
                 LoginAttempt::incrementLoginAttempts($request->ip());
                 return response([
-                    'message' => 'هیچ شناسه ای برای ورود، وارد نکرده اید'
+                    'message' => 'هیچ شناسه ای برای ورود، وارد نکرده اید',
+                    'reached_login_attempts_limit' => LoginAttempt::reachedMaximumAllowedLoginAttempt($request->ip())
                 ]);
             }
         } else { // login attempts exceeded...
@@ -75,13 +78,23 @@ class AuthController extends Controller
             $responseString = $response->getBody()->getContents();
             $responseObject = json_decode($responseString);
             if ($responseObject->success === false) {
-                return response($responseString, 200, [
+                return response([
+                    'reached_login_attempts_limit' => LoginAttempt::reachedMaximumAllowedLoginAttempt($request->ip()),
+                    'captcha' => $responseObject
+                ], 200, [
                     'Content-Type' => 'application/json'
                 ]);
             } else { // Passed the recaptcha verification and should be allowed to log in
                 LoginAttempt::deleteLoginAttempts($request->ip());
+                if (Auth::attempt([
+                    'email' => $request['email'],
+                    'password' => $request['password']
+                ])) {
+                    return Auth::user();
+                }
                 return response([
-                    'captcha' => $responseString,
+
+                    'captcha' => $responseObject,
                     'message' => 'کپچا با موفقیت گذرانده شد، می توانید دوباره برای وارد شدن تلاش کنید'
                 ], 200, [
                     'Content-Type' => 'application/json'
