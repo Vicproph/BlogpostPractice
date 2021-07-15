@@ -8,11 +8,13 @@ use App\Events\Registered;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRegisterRequest;
 use App\Http\Resources\UserResource;
+use App\Jobs\ProcessLogout;
 use App\Models\Image;
 use App\Models\LoginAttempt;
 use App\Models\Role;
 use App\Models\Skill;
 use App\Models\User;
+use Carbon\Carbon;
 use DateTime;
 use GuzzleHttp\Client;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
@@ -24,8 +26,7 @@ use Psr\Http\Message\ResponseInterface;
 
 class AuthController extends Controller
 {
-    // Google ReCaptcha stuff
-
+    const MAX_LOGIN_TIME = 10; // In minutes
     // some ordinary responses
 
     public function login(Request $request)
@@ -54,6 +55,7 @@ class AuthController extends Controller
                     }
                     $token = $user->createToken('access_token')->plainTextToken;
                     event(new LoggedIn($user, $request->ip()));
+                    self::startLogoutTimer($user);
                     return response([
                         'user' => new UserResource($user),
                         'access_token' => $token,
@@ -102,7 +104,20 @@ class AuthController extends Controller
             }
         }
     }
-
+    public function getRemainingLoginTime()
+    {
+        $user = Auth::user();
+        $lastLoginAt = $user->last_login_at;
+        $now = new Carbon(date('Y-m-d h:i:s'));
+        $toBeExpired = (new Carbon($lastLoginAt))->addMinutes(self::MAX_LOGIN_TIME);
+        $minutesLeft = $toBeExpired->diffInMinutes($now);
+        $secondsLeft = $toBeExpired->diffInSeconds($now) % 60;
+        $minutesLeft = (($minutesLeft / 10 < 1) ? "0$minutesLeft" : $minutesLeft); // Just to make it look pretty like a digital clock in the output
+        $secondsLeft = (($secondsLeft / 10 < 1) ? "0$secondsLeft" : $secondsLeft); // Just to make it look pretty like a digital clock in the output
+        return response([
+            'remaining_login_time' => "$minutesLeft:$secondsLeft"
+        ]);
+    }
     public function loginInsteadOf($id) // Only admins can do this
     {
         event(new MadeActivity(Auth::user()));
@@ -120,7 +135,12 @@ class AuthController extends Controller
             ]);
         }
     }
-
+    public static function startLogoutTimer($user)
+    {
+        $logoutJob = new ProcessLogout($user);
+        $logoutJob->delay(now()->addMinutes(self::MAX_LOGIN_TIME));
+        dispatch($logoutJob);
+    }
     public function logout()
     {
         /**

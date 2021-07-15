@@ -17,6 +17,7 @@ class Post extends Model
     }
     public function scopeSortByLikes($query, $direction)
     {
+        
         return $query->withCount('likes')
             ->orderBy('likes_count', $direction);
     }

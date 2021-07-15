@@ -27,6 +27,7 @@ Route::group(['namespace' => 'api\\'], function () {
             Route::post('/edit', 'UserController@update')->name('users.update');
             Route::post('/notifications', 'UserController@getUnreadNotifications');
             Route::post('/{id}/check-activity', 'UserController@getLastActivityTime');
+            Route::get('login-time', 'AuthController@getRemainingLoginTime');
         });
     });
 

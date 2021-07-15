@@ -25,6 +25,7 @@ class EventServiceProvider extends ServiceProvider
         'App\Events\LoggedIn' => [
             "App\Listeners\SendRemainingLoginTimeNotification",
             "App\Listeners\RemoveLoginAttempts",
+            'App\Listeners\SetLoginTimer'
 
         ],
         'App\Events\PostUnapproved' => [
